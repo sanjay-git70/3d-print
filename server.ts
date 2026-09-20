@@ -2,12 +2,9 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
-import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 
-dotenv.config();
-
-// Sanitize invalid or empty CLOUDINARY_URL from process.env to prevent Cloudinary SDK from throwing protocol errors
+// Sanitize invalid or empty CLOUDINARY_URL from process.env before any SDK can inspect it
 if (process.env.CLOUDINARY_URL !== undefined) {
   const cUrl = String(process.env.CLOUDINARY_URL).trim();
   if (!cUrl.startsWith("cloudinary://")) {
@@ -15,29 +12,57 @@ if (process.env.CLOUDINARY_URL !== undefined) {
   }
 }
 
-// Configure Cloudinary safely with fallback credentials
-try {
-  if (process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.startsWith("cloudinary://")) {
-    cloudinary.config({
-      cloudinary_url: process.env.CLOUDINARY_URL,
-      secure: true,
-    });
-  } else {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "jushiok7",
-      api_key: process.env.CLOUDINARY_API_KEY || undefined,
-      api_secret: process.env.CLOUDINARY_API_SECRET || undefined,
-      secure: true,
-    });
+dotenv.config();
+
+// Re-check after dotenv.config()
+if (process.env.CLOUDINARY_URL !== undefined) {
+  const cUrl = String(process.env.CLOUDINARY_URL).trim();
+  if (!cUrl.startsWith("cloudinary://")) {
+    delete process.env.CLOUDINARY_URL;
   }
-} catch (err) {
-  console.warn("Cloudinary configuration notice:", err);
+}
+
+// Lazy Cloudinary instance holder
+let cloudinaryInstance: any = null;
+
+function getCloudinary() {
+  if (!cloudinaryInstance) {
+    if (process.env.CLOUDINARY_URL !== undefined) {
+      const cUrl = String(process.env.CLOUDINARY_URL).trim();
+      if (!cUrl.startsWith("cloudinary://")) {
+        delete process.env.CLOUDINARY_URL;
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { v2: cld } = require("cloudinary");
+    try {
+      if (process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.startsWith("cloudinary://")) {
+        cld.config({
+          cloudinary_url: process.env.CLOUDINARY_URL,
+          secure: true,
+        });
+      } else {
+        cld.config({
+          cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "jushiok7",
+          api_key: process.env.CLOUDINARY_API_KEY || "873981713524356",
+          api_secret: process.env.CLOUDINARY_API_SECRET || "17qkUtU1PH-KRltAlsMOIC8KCdw",
+          secure: true,
+        });
+      }
+    } catch (err) {
+      console.warn("Cloudinary configuration notice:", err);
+    }
+    cloudinaryInstance = cld;
+  }
+  return cloudinaryInstance;
 }
 
 // Helper to check Cloudinary configuration
 function isCloudinaryConfigured(): boolean {
   try {
-    const config = cloudinary.config();
+    const cld = getCloudinary();
+    const config = cld.config();
     const hasValidUrl = Boolean(process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.startsWith("cloudinary://"));
     return Boolean(config.cloud_name && (config.api_key || hasValidUrl));
   } catch {
@@ -447,7 +472,8 @@ Extract the following exact payment details with high precision:
    * Endpoint to check Cloudinary configuration status
    */
   app.get("/api/cloudinary/config", (req, res) => {
-    const config = cloudinary.config();
+    const cld = getCloudinary();
+    const config = cld.config();
     res.json({
       configured: isCloudinaryConfigured(),
       cloudName: config.cloud_name || process.env.CLOUDINARY_CLOUD_NAME || "jushiok7",
@@ -526,7 +552,8 @@ Extract the following exact payment details with high precision:
         uploadOptions.transformation = transformation;
       }
 
-      const result = await cloudinary.uploader.upload(image, uploadOptions);
+      const cld = getCloudinary();
+      const result = await cld.uploader.upload(image, uploadOptions);
 
       return res.json({
         success: true,
@@ -568,7 +595,8 @@ Extract the following exact payment details with high precision:
         });
       }
 
-      const result = await cloudinary.uploader.destroy(publicId, {
+      const cld = getCloudinary();
+      const result = await cld.uploader.destroy(publicId, {
         resource_type: "image",
         invalidate: true,
       });
