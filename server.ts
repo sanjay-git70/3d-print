@@ -3,68 +3,58 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import { createRequire } from "module";
 
-// Sanitize invalid or empty CLOUDINARY_URL from process.env before any SDK can inspect it
-if (process.env.CLOUDINARY_URL !== undefined) {
-  const cUrl = String(process.env.CLOUDINARY_URL).trim();
-  if (!cUrl.startsWith("cloudinary://")) {
-    delete process.env.CLOUDINARY_URL;
-  }
-}
+const require = createRequire(import.meta.url);
 
-dotenv.config();
+// Delete any CLOUDINARY_URL from process.env to prevent Cloudinary SDK from overriding api_secret with masked values
+delete process.env.CLOUDINARY_URL;
 
-// Re-check after dotenv.config()
-if (process.env.CLOUDINARY_URL !== undefined) {
-  const cUrl = String(process.env.CLOUDINARY_URL).trim();
-  if (!cUrl.startsWith("cloudinary://")) {
-    delete process.env.CLOUDINARY_URL;
-  }
+dotenv.config({ override: true });
+
+delete process.env.CLOUDINARY_URL;
+
+// Normalize API secret
+function getResolvedCloudinaryCredentials() {
+  const cloudName = (process.env.CLOUDINARY_CLOUD_NAME || "jushiok7").trim();
+  const apiKey = (process.env.CLOUDINARY_API_KEY || "873981713524356").trim();
+  let apiSecret = (process.env.CLOUDINARY_API_SECRET || "17qkUtU1PH-KRltAlsM0lC8KCdw").trim();
+  apiSecret = apiSecret
+    .replace(/MOIC8KCdw/g, "M0lC8KCdw")
+    .replace(/MOlC8KCdw/g, "M0lC8KCdw")
+    .replace(/M0IC8KCdw/g, "M0lC8KCdw");
+
+  return { cloudName, apiKey, apiSecret };
 }
 
 // Lazy Cloudinary instance holder
 let cloudinaryInstance: any = null;
 
 function getCloudinary() {
-  if (!cloudinaryInstance) {
-    if (process.env.CLOUDINARY_URL !== undefined) {
-      const cUrl = String(process.env.CLOUDINARY_URL).trim();
-      if (!cUrl.startsWith("cloudinary://")) {
-        delete process.env.CLOUDINARY_URL;
-      }
-    }
+  delete process.env.CLOUDINARY_URL;
 
+  if (!cloudinaryInstance) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { v2: cld } = require("cloudinary");
-    try {
-      if (process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.startsWith("cloudinary://")) {
-        cld.config({
-          cloudinary_url: process.env.CLOUDINARY_URL,
-          secure: true,
-        });
-      } else {
-        cld.config({
-          cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "jushiok7",
-          api_key: process.env.CLOUDINARY_API_KEY || "873981713524356",
-          api_secret: process.env.CLOUDINARY_API_SECRET || "17qkUtU1PH-KRltAlsMOIC8KCdw",
-          secure: true,
-        });
-      }
-    } catch (err) {
-      console.warn("Cloudinary configuration notice:", err);
-    }
     cloudinaryInstance = cld;
   }
+
+  const { cloudName, apiKey, apiSecret } = getResolvedCloudinaryCredentials();
+  cloudinaryInstance.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+    secure: true,
+  });
+
   return cloudinaryInstance;
 }
 
 // Helper to check Cloudinary configuration
 function isCloudinaryConfigured(): boolean {
   try {
-    const cld = getCloudinary();
-    const config = cld.config();
-    const hasValidUrl = Boolean(process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.startsWith("cloudinary://"));
-    return Boolean(config.cloud_name && (config.api_key || hasValidUrl));
+    const { cloudName, apiKey, apiSecret } = getResolvedCloudinaryCredentials();
+    return Boolean(cloudName && apiKey && apiSecret);
   } catch {
     return false;
   }
