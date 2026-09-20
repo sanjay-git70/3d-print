@@ -133,12 +133,13 @@ export const TrackOrder: React.FC = () => {
     }
   };
 
+  const orderParam = searchParams.get('order') || '';
+
   useEffect(() => {
     window.scrollTo(0, 0);
-    const paramOrder = searchParams.get('order');
-    if (paramOrder) {
-      setQuery(paramOrder);
-      executeSearch(paramOrder);
+    if (orderParam) {
+      setQuery(orderParam);
+      executeSearch(orderParam);
     } else {
       // Auto-load the latest order for instant preview if no param
       orderService.getAll().then((orders) => {
@@ -148,23 +149,12 @@ export const TrackOrder: React.FC = () => {
         }
       });
     }
-  }, [searchParams]);
+  }, [orderParam]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchParams({ order: query });
     executeSearch(query);
-  };
-
-  const handleSimulateStatusChange = async (newStatus: OrderStatus) => {
-    if (!order) return;
-    try {
-      const updated = await orderService.updateStatus(order.id, newStatus);
-      setOrder(updated);
-      showToast(`Simulated status updated to: ${newStatus}`, 'success');
-    } catch (err) {
-      showToast('Failed to update status', 'error');
-    }
   };
 
   const currentStageNum = order ? calculateCurrentStageIndex(order.order_status) : 1;
@@ -518,31 +508,6 @@ export const TrackOrder: React.FC = () => {
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Quick interactive status preview bar */}
-          <div className="bg-slate-100 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <span className="text-slate-600 dark:text-neutral-400 font-mono flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-              <span>Simulate Timeline State:</span>
-            </span>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              {TRACKING_STAGES.map((s) => (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => handleSimulateStatusChange(s.key)}
-                  className={`px-2.5 py-1 rounded-lg font-mono text-[11px] transition-all cursor-pointer ${
-                    order.order_status === s.key
-                      ? 'bg-cyan-600 text-white font-bold shadow-sm'
-                      : 'bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-700 border border-slate-300 dark:border-neutral-700'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
             </div>
           </div>
 

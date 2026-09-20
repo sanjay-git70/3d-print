@@ -1,14 +1,49 @@
 import express from "express";
 import path from "path";
-import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Sanitize invalid or empty CLOUDINARY_URL from process.env to prevent Cloudinary SDK from throwing protocol errors
+if (process.env.CLOUDINARY_URL !== undefined) {
+  const cUrl = String(process.env.CLOUDINARY_URL).trim();
+  if (!cUrl.startsWith("cloudinary://")) {
+    delete process.env.CLOUDINARY_URL;
+  }
+}
+
+// Configure Cloudinary safely with fallback credentials
+try {
+  if (process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.startsWith("cloudinary://")) {
+    cloudinary.config({
+      cloudinary_url: process.env.CLOUDINARY_URL,
+      secure: true,
+    });
+  } else {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "jushiok7",
+      api_key: process.env.CLOUDINARY_API_KEY || undefined,
+      api_secret: process.env.CLOUDINARY_API_SECRET || undefined,
+      secure: true,
+    });
+  }
+} catch (err) {
+  console.warn("Cloudinary configuration notice:", err);
+}
+
+// Helper to check Cloudinary configuration
+function isCloudinaryConfigured(): boolean {
+  try {
+    const config = cloudinary.config();
+    const hasValidUrl = Boolean(process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.startsWith("cloudinary://"));
+    return Boolean(config.cloud_name && (config.api_key || hasValidUrl));
+  } catch {
+    return false;
+  }
+}
 
 // Lazy Gemini client helper
 let geminiClient: GoogleGenAI | null = null;
@@ -52,6 +87,103 @@ async function startServer() {
       timestamp: new Date().toISOString(),
       hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
     });
+  });
+
+  /**
+   * Server-side validation endpoint for customer, college & delivery information
+   */
+  app.post("/api/orders/validate", (req, res) => {
+    try {
+      const {
+        name,
+        email,
+        phone,
+        college_type = "KPR College",
+        college,
+        delivery_method = "college_delivery",
+        department,
+        year,
+        building_block,
+        address,
+        city,
+        state,
+        pincode,
+      } = req.body;
+
+      const errors: Record<string, string> = {};
+
+      if (!name || String(name).trim().length < 2) {
+        errors.name = "Full name is required (minimum 2 characters).";
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(String(email).trim())) {
+        errors.email = "A valid email address is required.";
+      }
+
+      const phoneClean = String(phone || "").replace(/\D/g, "");
+      if (!phoneClean || phoneClean.length !== 10) {
+        errors.phone = "A valid 10-digit mobile number is required.";
+      }
+
+      if (college_type === "Other") {
+        if (!college || String(college).trim().length < 2) {
+          errors.college = "College / Institution name is required.";
+        }
+        if (delivery_method === "college_delivery") {
+          errors.delivery_method = "College delivery is available only within KPR College. Please select Home Delivery.";
+        }
+      }
+
+      if (delivery_method === "college_delivery") {
+        if (college_type !== "KPR College") {
+          errors.delivery_method = "College delivery is available only within KPR College.";
+        }
+        if (!department || String(department).trim().length === 0) {
+          errors.department = "Department is required for KPR College delivery.";
+        }
+        if (!year || String(year).trim().length === 0) {
+          errors.year = "Year of study is required.";
+        }
+        if (!building_block || String(building_block).trim().length === 0) {
+          errors.building_block = "Building / Block is required.";
+        }
+      } else if (delivery_method === "home_delivery") {
+        if (!address || String(address).trim().length < 5) {
+          errors.address = "Complete street address (at least 5 characters) is required for Home Delivery.";
+        }
+        if (!city || String(city).trim().length < 2) {
+          errors.city = "City is required for Home Delivery.";
+        }
+        if (!state || String(state).trim().length < 2) {
+          errors.state = "State is required for Home Delivery.";
+        }
+        const pinClean = String(pincode || "").trim();
+        if (!pinClean || !/^\d{6}$/.test(pinClean)) {
+          errors.pincode = "A valid 6-digit postal pincode is required.";
+        }
+      } else {
+        errors.delivery_method = "Invalid delivery method specified.";
+      }
+
+      if (Object.keys(errors).length > 0) {
+        return res.status(400).json({
+          valid: false,
+          errors,
+          message: "Validation failed. Please review the provided customer and delivery information.",
+        });
+      }
+
+      return res.json({
+        valid: true,
+        message: "Order customer and delivery details validated successfully.",
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        valid: false,
+        error: err.message || "Internal validation error",
+      });
+    }
   });
 
   /**
@@ -309,6 +441,150 @@ Extract the following exact payment details with high precision:
       });
     }
     res.json({ success: true });
+  });
+
+  /**
+   * Endpoint to check Cloudinary configuration status
+   */
+  app.get("/api/cloudinary/config", (req, res) => {
+    const config = cloudinary.config();
+    res.json({
+      configured: isCloudinaryConfigured(),
+      cloudName: config.cloud_name || process.env.CLOUDINARY_CLOUD_NAME || "jushiok7",
+    });
+  });
+
+  /**
+   * Secure Cloudinary Image Upload Endpoint
+   * Handles main and gallery product image uploads into structured folders
+   */
+  app.post("/api/cloudinary/upload", async (req, res) => {
+    try {
+      if (!isCloudinaryConfigured()) {
+        return res.status(503).json({
+          success: false,
+          error: "Cloudinary service is not configured on the server. Please check environment variables.",
+        });
+      }
+
+      const {
+        image,
+        folder = "3d-printing/products/general",
+        publicId,
+        tags = ["3d-printing", "product"],
+        transformation,
+      } = req.body;
+
+      if (!image) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing 'image' payload (base64 string or remote URL required).",
+        });
+      }
+
+      // Validate base64 format and size
+      if (typeof image === "string" && image.startsWith("data:")) {
+        const mimeMatch = image.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+        if (mimeMatch) {
+          const mime = mimeMatch[1].toLowerCase();
+          const allowedMimes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+          if (!allowedMimes.includes(mime)) {
+            return res.status(400).json({
+              success: false,
+              error: `Unsupported image format (${mime}). Please upload JPG, PNG, or WebP images.`,
+            });
+          }
+        }
+
+        // Estimate size in bytes
+        const base64Content = image.split(",")[1] || "";
+        const approxBytes = Math.ceil((base64Content.length * 3) / 4);
+        const maxBytes = 10 * 1024 * 1024; // 10MB
+        if (approxBytes > maxBytes) {
+          return res.status(400).json({
+            success: false,
+            error: "Image file is too large. Maximum allowed file size is 10 MB.",
+          });
+        }
+      }
+
+      // Upload to Cloudinary with secure parameters
+      const uploadOptions: any = {
+        folder,
+        resource_type: "image",
+        overwrite: true,
+        tags,
+        use_filename: false,
+        unique_filename: true,
+      };
+
+      if (publicId) {
+        uploadOptions.public_id = publicId;
+      }
+
+      if (transformation) {
+        uploadOptions.transformation = transformation;
+      }
+
+      const result = await cloudinary.uploader.upload(image, uploadOptions);
+
+      return res.json({
+        success: true,
+        url: result.url,
+        secure_url: result.secure_url,
+        public_id: result.public_id,
+        format: result.format,
+        width: result.width,
+        height: result.height,
+        bytes: result.bytes,
+        created_at: result.created_at,
+      });
+    } catch (error: any) {
+      console.error("Cloudinary upload error:", error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Failed to upload image to Cloudinary. Please try again.",
+      });
+    }
+  });
+
+  /**
+   * Secure Cloudinary Asset Deletion Endpoint
+   */
+  app.post("/api/cloudinary/delete", async (req, res) => {
+    try {
+      if (!isCloudinaryConfigured()) {
+        return res.status(503).json({
+          success: false,
+          error: "Cloudinary service is not configured on the server.",
+        });
+      }
+
+      const { publicId } = req.body;
+      if (!publicId) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing 'publicId' parameter for asset deletion.",
+        });
+      }
+
+      const result = await cloudinary.uploader.destroy(publicId, {
+        resource_type: "image",
+        invalidate: true,
+      });
+
+      return res.json({
+        success: true,
+        result: result.result,
+        message: `Asset ${publicId} successfully removed from Cloudinary.`,
+      });
+    } catch (error: any) {
+      console.error("Cloudinary delete error:", error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Failed to delete asset from Cloudinary.",
+      });
+    }
   });
 
   // Vite middleware for development vs static production serve

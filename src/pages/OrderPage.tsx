@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Product, CustomizationData, CollegeType, DeliveryMethod } from '../types';
 import { productService } from '../services/productService';
@@ -58,7 +58,7 @@ export const OrderPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const loggedInCustomer = authService.getCurrentCustomer();
+  const loggedInCustomer = useMemo(() => authService.getCurrentCustomer(), []);
 
   const searchParams = new URLSearchParams(location.search);
   const paramProductId = searchParams.get('productId');
@@ -86,15 +86,18 @@ export const OrderPage: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(initialColor);
   const [specialInstructions, setSpecialInstructions] = useState('');
 
-  // Customer form fields
-  const [customerForm, setCustomerForm] = useState<CustomerFormData>({
+  // Customer form fields initialized directly
+  const [customerForm, setCustomerForm] = useState<CustomerFormData>(() => ({
     name: loggedInCustomer?.name || '',
     phone: loggedInCustomer?.phone || '',
     email: loggedInCustomer?.email || '',
     college_type: (loggedInCustomer?.college_type as CollegeType) || 'KPR College',
     college: loggedInCustomer?.college || (loggedInCustomer?.college_type === 'Other' ? '' : 'KPR College'),
     roll_number: loggedInCustomer?.roll_number || '',
-    delivery_method: (loggedInCustomer?.delivery_method as DeliveryMethod) || 'college_delivery',
+    delivery_method:
+      loggedInCustomer?.college_type === 'Other'
+        ? 'home_delivery'
+        : (loggedInCustomer?.delivery_method as DeliveryMethod) || 'college_delivery',
 
     // KPR delivery fields
     department: loggedInCustomer?.department || KPR_DEPARTMENTS[0],
@@ -108,39 +111,13 @@ export const OrderPage: React.FC = () => {
     city: loggedInCustomer?.city || 'Coimbatore',
     state: loggedInCustomer?.state || 'Tamil Nadu',
     pincode: loggedInCustomer?.pincode || '641407',
-  });
+  }));
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-
-    // If customer is logged in, populate profile
-    if (loggedInCustomer) {
-      setCustomerForm((prev) => ({
-        ...prev,
-        name: loggedInCustomer.name || prev.name,
-        phone: loggedInCustomer.phone || prev.phone,
-        email: loggedInCustomer.email || prev.email,
-        college_type: loggedInCustomer.college_type || prev.college_type,
-        college: loggedInCustomer.college || prev.college,
-        roll_number: loggedInCustomer.roll_number || prev.roll_number,
-        delivery_method:
-          loggedInCustomer.college_type === 'Other'
-            ? 'home_delivery'
-            : loggedInCustomer.delivery_method || prev.delivery_method,
-        department: loggedInCustomer.department || prev.department,
-        year: loggedInCustomer.year || prev.year,
-        section: loggedInCustomer.section || prev.section,
-        building_block: loggedInCustomer.building_block || prev.building_block,
-        pickup_location: loggedInCustomer.pickup_location || prev.pickup_location,
-        address: loggedInCustomer.address || prev.address,
-        city: loggedInCustomer.city || prev.city,
-        state: loggedInCustomer.state || prev.state,
-        pincode: loggedInCustomer.pincode || prev.pincode,
-      }));
-    }
 
     const loadProduct = async () => {
       try {
@@ -180,7 +157,7 @@ export const OrderPage: React.FC = () => {
     };
 
     loadProduct();
-  }, [targetProductId, initialColor, loggedInCustomer]);
+  }, [targetProductId, initialColor]);
 
   if (loading || !product) {
     return (
@@ -232,13 +209,33 @@ export const OrderPage: React.FC = () => {
     setIsCreatingOrder(true);
 
     try {
-      // 2. Format delivery address based on method
+      // 2. Server-side validation enforcement
+      try {
+        const valRes = await fetch('/api/orders/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(customerForm),
+        });
+        const valData = await valRes.json();
+        if (!valRes.ok || !valData.valid) {
+          if (valData.errors) {
+            setFormErrors(valData.errors);
+          }
+          showToast(valData.message || 'Validation failed. Please verify details.', 'error');
+          setIsCreatingOrder(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend validation network check:', err);
+      }
+
+      // 3. Format delivery address based on method
       let resolvedAddress = customerForm.address || '';
       if (customerForm.delivery_method === 'college_delivery') {
         resolvedAddress = `KPR Campus: Dept of ${customerForm.department}, ${customerForm.year}, Sec: ${customerForm.section || 'N/A'}, Block: ${customerForm.building_block}${customerForm.pickup_location ? ` (Point: ${customerForm.pickup_location})` : ''}`;
       }
 
-      // 3. Create or update customer record
+      // 4. Create or update customer record
       const customerPayload = {
         name: customerForm.name,
         phone: customerForm.phone,
@@ -260,14 +257,14 @@ export const OrderPage: React.FC = () => {
 
       const customer = await customerService.upsertCustomer(customerPayload);
 
-      // 4. Prepare customization object
+      // 5. Prepare customization object
       const customizationData: CustomizationData = {
         customText: customText.trim() || undefined,
         selectedColor: selectedColor || undefined,
         specialInstructions: specialInstructions.trim() || undefined,
       };
 
-      // 5. Create Order
+      // 6. Create Order
       const newOrder = await orderService.createOrder({
         customer_id: customer.id,
         product_id: product.id,
@@ -280,7 +277,7 @@ export const OrderPage: React.FC = () => {
 
       showToast('Order registered! Redirecting to UPI payment...', 'success');
 
-      // 6. Navigate directly to UPI Payment page
+      // 7. Navigate directly to UPI Payment page
       navigate(`/payment/${newOrder.id}`, {
         state: {
           orderId: newOrder.id,
@@ -500,38 +497,51 @@ export const OrderPage: React.FC = () => {
               {formErrors.email && <p className="text-[11px] text-rose-500">{formErrors.email}</p>}
             </div>
 
-            {/* College Selection */}
+            {/* College Selection Dropdown */}
             <div className="space-y-1.5">
-              <label className="font-mono text-slate-700 dark:text-neutral-300 flex items-center gap-1.5 font-semibold">
-                <GraduationCap className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" /> College *
+              <label htmlFor="college-select" className="font-mono text-slate-700 dark:text-neutral-300 flex items-center justify-between font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <GraduationCap className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" /> College Name *
+                </span>
+                <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-normal">
+                  {isKprStudent ? 'Campus delivery eligible' : 'Home courier only'}
+                </span>
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleFieldChange('college_type', 'KPR College')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    customerForm.college_type === 'KPR College'
-                      ? 'bg-cyan-500/10 border-cyan-500 text-cyan-700 dark:text-cyan-300 ring-1 ring-cyan-500/30'
-                      : 'bg-slate-50 dark:bg-neutral-950 border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400'
-                  }`}
-                >
-                  <Building2 className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                  <span>KPR College</span>
-                </button>
+              <select
+                id="college-select"
+                value={customerForm.college_type}
+                onChange={(e) => {
+                  const val = e.target.value as CollegeType;
+                  handleFieldChange('college_type', val);
+                  if (val === 'KPR College') {
+                    handleFieldChange('college', 'KPR College');
+                  } else {
+                    handleFieldChange('college', '');
+                  }
+                }}
+                className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-neutral-950 border rounded-xl text-slate-900 dark:text-white focus:outline-none font-medium ${
+                  formErrors.college_type ? 'border-rose-500' : 'border-slate-200 dark:border-neutral-800 focus:border-cyan-500'
+                }`}
+              >
+                <option value="KPR College">KPR College</option>
+                <option value="Other">Other</option>
+              </select>
+              {formErrors.college_type && <p className="text-[11px] text-rose-500">{formErrors.college_type}</p>}
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleFieldChange('college_type', 'Other')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    customerForm.college_type === 'Other'
-                      ? 'bg-purple-500/10 border-purple-500 text-purple-700 dark:text-purple-300 ring-1 ring-purple-500/30'
-                      : 'bg-slate-50 dark:bg-neutral-950 border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400'
-                  }`}
-                >
-                  <Home className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                  <span>Other College</span>
-                </button>
-              </div>
+            {/* Registration / Roll Number */}
+            <div className="space-y-1.5">
+              <label htmlFor="roll-number" className="font-mono text-slate-700 dark:text-neutral-300 flex items-center gap-1.5 font-semibold">
+                <GraduationCap className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> Registration / Roll Number
+              </label>
+              <input
+                id="roll-number"
+                type="text"
+                value={customerForm.roll_number || ''}
+                onChange={(e) => handleFieldChange('roll_number', e.target.value.toUpperCase())}
+                placeholder="e.g. 22CS104 / 711321104..."
+                className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 focus:border-cyan-500 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus:outline-none font-mono uppercase"
+              />
             </div>
 
             {/* Other College Name Input */}
@@ -546,26 +556,12 @@ export const OrderPage: React.FC = () => {
                   required
                   value={customerForm.college || ''}
                   onChange={(e) => handleFieldChange('college', e.target.value)}
-                  placeholder="e.g. PSG Tech / CIT / Amrita University"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 focus:border-cyan-500 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus:outline-none"
+                  placeholder="e.g. PSG Tech / CIT / Amrita University / Anna University"
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-neutral-950 border rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus:outline-none ${
+                    formErrors.college ? 'border-rose-500' : 'border-slate-200 dark:border-neutral-800 focus:border-cyan-500'
+                  }`}
                 />
-              </div>
-            )}
-
-            {/* Roll Number (for KPR College) */}
-            {isKprStudent && (
-              <div className="space-y-1.5 sm:col-span-2">
-                <label htmlFor="roll-number" className="font-mono text-slate-700 dark:text-neutral-300 flex items-center gap-1.5 font-semibold">
-                  <GraduationCap className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> Student Roll Number / ID <span className="text-slate-400 dark:text-neutral-500 font-normal">(Optional)</span>
-                </label>
-                <input
-                  id="roll-number"
-                  type="text"
-                  value={customerForm.roll_number || ''}
-                  onChange={(e) => handleFieldChange('roll_number', e.target.value)}
-                  placeholder="e.g. 22CS104 or 23ME045"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 focus:border-cyan-500 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus:outline-none font-mono uppercase"
-                />
+                {formErrors.college && <p className="text-[11px] text-rose-500">{formErrors.college}</p>}
               </div>
             )}
           </div>

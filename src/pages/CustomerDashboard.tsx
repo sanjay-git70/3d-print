@@ -78,7 +78,7 @@ export const CustomerDashboard: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     loadData();
-  }, [navigate]);
+  }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);

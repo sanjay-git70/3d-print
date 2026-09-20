@@ -26,12 +26,14 @@ export const PaymentVerification: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const stateOrderId = stateData?.orderId;
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
     const loadOrder = async () => {
-      if (stateData?.orderId) {
-        const found = await orderService.getById(stateData.orderId);
+      if (stateOrderId) {
+        const found = await orderService.getById(stateOrderId);
         if (found) {
           setOrder(found);
           setLoading(false);
@@ -48,7 +50,7 @@ export const PaymentVerification: React.FC = () => {
     };
 
     loadOrder();
-  }, [stateData]);
+  }, [stateOrderId]);
 
   if (loading || !order) {
     return (

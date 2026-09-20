@@ -60,12 +60,33 @@ export const AuthPortal: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const redirectUrl = searchParams.get('redirect') || '';
+  const tabParam = searchParams.get('tab');
+
+  const getResolvedCustomerRedirect = () => {
+    const redirect = searchParams.get('redirect');
+    if (!redirect) return '/customer/orders';
+
+    // Preserve product ordering query parameters
+    const productId = searchParams.get('productId');
+    const selectedColor = searchParams.get('selectedColor');
+    const quantity = searchParams.get('quantity');
+
+    if (redirect === '/order' || redirect.startsWith('/order')) {
+      const params = new URLSearchParams();
+      if (productId) params.set('productId', productId);
+      if (selectedColor) params.set('selectedColor', selectedColor);
+      if (quantity) params.set('quantity', quantity);
+      const qs = params.toString();
+      return qs ? `/order?${qs}` : '/order';
+    }
+
+    return redirect;
+  };
 
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
     if (tabParam === 'admin') setRoleTab('admin');
     else if (tabParam === 'customer') setRoleTab('customer');
-  }, [searchParams]);
+  }, [tabParam]);
 
   const switchRoleTab = (tab: 'customer' | 'admin') => {
     setRoleTab(tab);
@@ -77,7 +98,7 @@ export const AuthPortal: React.FC = () => {
   const handleCustomerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerIdentifier.trim()) {
-      setErrorMessage('Please enter your email or mobile phone number.');
+      setErrorMessage('Please enter your email or 10-digit mobile phone number.');
       return;
     }
     setLoading(true);
@@ -85,7 +106,7 @@ export const AuthPortal: React.FC = () => {
     try {
       const user = await authService.loginCustomer(customerIdentifier, customerPassword);
       showToast(`Welcome back, ${user.name}!`, 'success');
-      navigate(redirectUrl || '/customer/orders');
+      navigate(getResolvedCustomerRedirect());
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to login as customer.');
       showToast(err.message || 'Customer login error', 'error');
@@ -97,16 +118,31 @@ export const AuthPortal: React.FC = () => {
   // Handle Customer Registration
   const handleCustomerSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupForm.name.trim() || !signupForm.email.trim() || !signupForm.phone.trim()) {
-      setErrorMessage('Please fill in your Name, Email, and Phone number.');
+    if (!signupForm.name.trim()) {
+      setErrorMessage('Please enter your full name.');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!signupForm.email.trim() || !emailRegex.test(signupForm.email.trim())) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+    const cleanPhone = signupForm.phone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setErrorMessage('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (signupForm.college_type === 'Other' && (!signupForm.college || signupForm.college.trim().length < 2)) {
+      setErrorMessage('Please enter your College / Institution name.');
+      return;
+    }
+
     setLoading(true);
     setErrorMessage('');
     try {
       const user = await authService.signupCustomer(signupForm);
       showToast(`Account created successfully! Welcome, ${user.name}.`, 'success');
-      navigate(redirectUrl || '/customer/orders');
+      navigate(getResolvedCustomerRedirect());
     } catch (err: any) {
       setErrorMessage(err.message || 'Registration failed.');
       showToast(err.message || 'Registration error', 'error');
@@ -398,47 +434,23 @@ export const AuthPortal: React.FC = () => {
                     </span>
                     <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-normal">KPR College gets direct campus delivery</span>
                   </label>
-                  
-                  {/* College selector chips */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSignupForm({
-                          ...signupForm,
-                          college_type: 'KPR College',
-                          college: 'KPR College',
-                        })
-                      }
-                      className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                        signupForm.college_type === 'KPR College'
-                          ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-200 ring-1 ring-cyan-500'
-                          : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-950 text-slate-700 dark:text-neutral-300 hover:border-slate-300'
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-cyan-500" />
-                      <span>KPR College</span>
-                    </button>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSignupForm({
-                          ...signupForm,
-                          college_type: 'Other',
-                          college: signupForm.college === 'KPR College' ? '' : signupForm.college,
-                        })
-                      }
-                      className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                        signupForm.college_type === 'Other'
-                          ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-200 ring-1 ring-cyan-500'
-                          : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-950 text-slate-700 dark:text-neutral-300 hover:border-slate-300'
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-slate-400" />
-                      <span>Other College</span>
-                    </button>
-                  </div>
+                  {/* College Name Selection Dropdown */}
+                  <select
+                    value={signupForm.college_type}
+                    onChange={(e) => {
+                      const val = e.target.value as 'KPR College' | 'Other';
+                      setSignupForm({
+                        ...signupForm,
+                        college_type: val,
+                        college: val === 'KPR College' ? 'KPR College' : '',
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-neutral-950 border border-slate-300 dark:border-neutral-800 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:border-cyan-500 focus:outline-none font-medium"
+                  >
+                    <option value="KPR College">KPR College</option>
+                    <option value="Other">Other</option>
+                  </select>
 
                   {signupForm.college_type === 'Other' && (
                     <input
@@ -446,7 +458,7 @@ export const AuthPortal: React.FC = () => {
                       required
                       value={signupForm.college}
                       onChange={(e) => setSignupForm({ ...signupForm, college: e.target.value })}
-                      placeholder="Enter your College / University name"
+                      placeholder="Enter your College / University name *"
                       className="w-full mt-2 px-3.5 py-2.5 bg-slate-50 dark:bg-neutral-950 border border-slate-300 dark:border-neutral-800 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:border-cyan-500 focus:outline-none"
                     />
                   )}

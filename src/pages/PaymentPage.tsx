@@ -41,12 +41,14 @@ export const PaymentPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedTx, setCopiedTx] = useState(false);
 
+  const stateOrderId = stateData?.orderId;
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
     const loadOrderData = async () => {
-      if (stateData?.orderId) {
-        const found = await orderService.getById(stateData.orderId);
+      if (stateOrderId) {
+        const found = await orderService.getById(stateOrderId);
         if (found) {
           setOrder(found);
           setLoading(false);
@@ -63,7 +65,7 @@ export const PaymentPage: React.FC = () => {
     };
 
     loadOrderData();
-  }, [stateData]);
+  }, [stateOrderId]);
 
   if (loading || !order) {
     return (

@@ -12,10 +12,26 @@ export const INITIAL_PRODUCTS: Product[] = [
     dimensions: '65 x 24 x 6 mm',
     print_time: '45 mins',
     available_colors: ['Matte Black', 'Electric Blue', 'Cyber Orange', 'Emerald Green', 'Arctic White', 'Pure White'],
-    image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000001/3d-printing/products/prod-001/main.jpg',
+    main_image: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000001/3d-printing/products/prod-001/main.jpg',
+    public_id: '3d-printing/products/prod-001/main',
     gallery_urls: [
-      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=800&q=80'
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000001/3d-printing/products/prod-001/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000002/3d-printing/products/prod-001/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000003/3d-printing/products/prod-001/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000004/3d-printing/products/prod-001/gallery-3.jpg'
+    ],
+    gallery_images: [
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000001/3d-printing/products/prod-001/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000002/3d-printing/products/prod-001/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000003/3d-printing/products/prod-001/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000004/3d-printing/products/prod-001/gallery-3.jpg'
+    ],
+    gallery_public_ids: [
+      '3d-printing/products/prod-001/main',
+      '3d-printing/products/prod-001/gallery-1',
+      '3d-printing/products/prod-001/gallery-2',
+      '3d-printing/products/prod-001/gallery-3'
     ],
     model_type: 'mesh_keychain',
     is_available: true,
@@ -34,10 +50,26 @@ export const INITIAL_PRODUCTS: Product[] = [
     dimensions: '85 x 85 x 75 mm',
     print_time: '3h 15m',
     available_colors: ['Obsidian Black', 'Sand Dune', 'Forest Green', 'Slate Grey', 'Pure White', 'Arctic White'],
-    image_url: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000010/3d-printing/products/prod-002/main.jpg',
+    main_image: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000010/3d-printing/products/prod-002/main.jpg',
+    public_id: '3d-printing/products/prod-002/main',
     gallery_urls: [
-      'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=800&q=80'
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000010/3d-printing/products/prod-002/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000011/3d-printing/products/prod-002/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000012/3d-printing/products/prod-002/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000013/3d-printing/products/prod-002/gallery-3.jpg'
+    ],
+    gallery_images: [
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000010/3d-printing/products/prod-002/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000011/3d-printing/products/prod-002/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000012/3d-printing/products/prod-002/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000013/3d-printing/products/prod-002/gallery-3.jpg'
+    ],
+    gallery_public_ids: [
+      '3d-printing/products/prod-002/main',
+      '3d-printing/products/prod-002/gallery-1',
+      '3d-printing/products/prod-002/gallery-2',
+      '3d-printing/products/prod-002/gallery-3'
     ],
     model_type: 'mesh_planter',
     is_available: true,
@@ -56,9 +88,26 @@ export const INITIAL_PRODUCTS: Product[] = [
     dimensions: '95 x 70 x 18 mm (Folded)',
     print_time: '4h 10m',
     available_colors: ['Carbon Black', 'Cosmic Blue', 'Titanium Silver', 'Pure White'],
-    image_url: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000020/3d-printing/products/prod-003/main.jpg',
+    main_image: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000020/3d-printing/products/prod-003/main.jpg',
+    public_id: '3d-printing/products/prod-003/main',
     gallery_urls: [
-      'https://images.unsplash.com/photo-1586953208448-b95a79798f07?auto=format&fit=crop&w=800&q=80'
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000020/3d-printing/products/prod-003/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000021/3d-printing/products/prod-003/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000022/3d-printing/products/prod-003/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000023/3d-printing/products/prod-003/gallery-3.jpg'
+    ],
+    gallery_images: [
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000020/3d-printing/products/prod-003/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000021/3d-printing/products/prod-003/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000022/3d-printing/products/prod-003/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000023/3d-printing/products/prod-003/gallery-3.jpg'
+    ],
+    gallery_public_ids: [
+      '3d-printing/products/prod-003/main',
+      '3d-printing/products/prod-003/gallery-1',
+      '3d-printing/products/prod-003/gallery-2',
+      '3d-printing/products/prod-003/gallery-3'
     ],
     model_type: 'mesh_stand',
     is_available: true,
@@ -77,9 +126,26 @@ export const INITIAL_PRODUCTS: Product[] = [
     dimensions: '110 x 110 x 180 mm',
     print_time: '6h 45m',
     available_colors: ['Silk Gold', 'Opal White', 'Emerald Silk', 'Midnight Purple', 'Pure White'],
-    image_url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000030/3d-printing/products/prod-004/main.jpg',
+    main_image: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000030/3d-printing/products/prod-004/main.jpg',
+    public_id: '3d-printing/products/prod-004/main',
     gallery_urls: [
-      'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80'
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000030/3d-printing/products/prod-004/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000031/3d-printing/products/prod-004/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000032/3d-printing/products/prod-004/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000033/3d-printing/products/prod-004/gallery-3.jpg'
+    ],
+    gallery_images: [
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000030/3d-printing/products/prod-004/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000031/3d-printing/products/prod-004/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000032/3d-printing/products/prod-004/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000033/3d-printing/products/prod-004/gallery-3.jpg'
+    ],
+    gallery_public_ids: [
+      '3d-printing/products/prod-004/main',
+      '3d-printing/products/prod-004/gallery-1',
+      '3d-printing/products/prod-004/gallery-2',
+      '3d-printing/products/prod-004/gallery-3'
     ],
     model_type: 'mesh_vase',
     is_available: true,
@@ -98,9 +164,26 @@ export const INITIAL_PRODUCTS: Product[] = [
     dimensions: '75 x 60 x 85 mm',
     print_time: '5h 20m',
     available_colors: ['Matte Grey (Primer Ready)', 'Neon Green Resin', 'Ruby Red Translucent', 'Pure White Resin'],
-    image_url: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000040/3d-printing/products/prod-005/main.jpg',
+    main_image: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000040/3d-printing/products/prod-005/main.jpg',
+    public_id: '3d-printing/products/prod-005/main',
     gallery_urls: [
-      'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80'
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000040/3d-printing/products/prod-005/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000041/3d-printing/products/prod-005/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000042/3d-printing/products/prod-005/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000043/3d-printing/products/prod-005/gallery-3.jpg'
+    ],
+    gallery_images: [
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000040/3d-printing/products/prod-005/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000041/3d-printing/products/prod-005/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000042/3d-printing/products/prod-005/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000043/3d-printing/products/prod-005/gallery-3.jpg'
+    ],
+    gallery_public_ids: [
+      '3d-printing/products/prod-005/main',
+      '3d-printing/products/prod-005/gallery-1',
+      '3d-printing/products/prod-005/gallery-2',
+      '3d-printing/products/prod-005/gallery-3'
     ],
     model_type: 'mesh_miniature',
     is_available: true,
@@ -119,9 +202,26 @@ export const INITIAL_PRODUCTS: Product[] = [
     dimensions: '140 x 120 x 70 mm',
     print_time: '4h 50m',
     available_colors: ['Matte Black', 'Ice Blue', 'Signal Yellow', 'Steel Grey', 'Pure White', 'Arctic White'],
-    image_url: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=800&q=80',
+    image_url: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000050/3d-printing/products/prod-006/main.jpg',
+    main_image: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000050/3d-printing/products/prod-006/main.jpg',
+    public_id: '3d-printing/products/prod-006/main',
     gallery_urls: [
-      'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=800&q=80'
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000050/3d-printing/products/prod-006/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000051/3d-printing/products/prod-006/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000052/3d-printing/products/prod-006/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000053/3d-printing/products/prod-006/gallery-3.jpg'
+    ],
+    gallery_images: [
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000050/3d-printing/products/prod-006/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000051/3d-printing/products/prod-006/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000052/3d-printing/products/prod-006/gallery-2.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000053/3d-printing/products/prod-006/gallery-3.jpg'
+    ],
+    gallery_public_ids: [
+      '3d-printing/products/prod-006/main',
+      '3d-printing/products/prod-006/gallery-1',
+      '3d-printing/products/prod-006/gallery-2',
+      '3d-printing/products/prod-006/gallery-3'
     ],
     model_type: 'mesh_organizer',
     is_available: true,
@@ -140,8 +240,24 @@ export const INITIAL_PRODUCTS: Product[] = [
     dimensions: '55 x 55 x 5 mm',
     print_time: '1h 15m',
     available_colors: ['Dual Tone Gold/Navy', 'Silver/Black', 'Crimson/White', 'Pure White/Cyan'],
-    image_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
-    gallery_urls: [],
+    image_url: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000060/3d-printing/products/prod-007/main.jpg',
+    main_image: 'https://res.cloudinary.com/jushiok7/image/upload/v1711000060/3d-printing/products/prod-007/main.jpg',
+    public_id: '3d-printing/products/prod-007/main',
+    gallery_urls: [
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000060/3d-printing/products/prod-007/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000061/3d-printing/products/prod-007/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000062/3d-printing/products/prod-007/gallery-2.jpg'
+    ],
+    gallery_images: [
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000060/3d-printing/products/prod-007/main.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000061/3d-printing/products/prod-007/gallery-1.jpg',
+      'https://res.cloudinary.com/jushiok7/image/upload/v1711000062/3d-printing/products/prod-007/gallery-2.jpg'
+    ],
+    gallery_public_ids: [
+      '3d-printing/products/prod-007/main',
+      '3d-printing/products/prod-007/gallery-1',
+      '3d-printing/products/prod-007/gallery-2'
+    ],
     model_type: 'mesh_keychain',
     is_available: true,
     is_featured: false,

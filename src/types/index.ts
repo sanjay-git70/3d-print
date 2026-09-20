@@ -56,13 +56,34 @@ export interface Product {
   print_time: string;
   available_colors: string[];
   image_url: string;
+  main_image?: string;
   gallery_urls: string[];
+  gallery_images?: string[];
+  public_id?: string;
+  gallery_public_ids?: string[];
   model_url?: string;
   model_type?: 'mesh_vase' | 'mesh_stand' | 'mesh_keychain' | 'mesh_planter' | 'mesh_miniature' | 'mesh_organizer' | 'custom';
   is_available: boolean;
   is_featured: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface CloudinaryUploadResponse {
+  success: boolean;
+  url: string;
+  secure_url: string;
+  public_id: string;
+  format: string;
+  width: number;
+  height: number;
+  bytes: number;
+  created_at: string;
+}
+
+export interface CloudinaryConfigStatus {
+  configured: boolean;
+  cloudName: string;
 }
 
 export type CollegeType = 'KPR College' | 'Other';

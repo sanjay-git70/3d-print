@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Product, ProductCategory } from '../../types';
 import { CATEGORIES } from '../product/CategoryFilter';
-import { X, UploadCloud, Plus, Trash2, Box, Layers, DollarSign, Check } from 'lucide-react';
+import { X, UploadCloud, Plus, Trash2, Box, Layers, DollarSign, Check, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '../common/Toast';
+import { CloudinaryImageUploader } from './CloudinaryImageUploader';
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 }) => {
   const { showToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [showManualUrl, setShowManualUrl] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -31,7 +33,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     print_time: '1h 30m',
     available_colors: ['Matte Black', 'Electric Blue'],
     image_url: '',
+    main_image: '',
+    public_id: undefined as string | undefined,
     gallery_urls: [] as string[],
+    gallery_images: [] as string[],
+    gallery_public_ids: [] as string[],
     model_type: 'mesh_stand' as any,
     is_available: true,
     is_featured: false,
@@ -41,6 +47,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   useEffect(() => {
     if (initialProduct) {
+      const mainImg = initialProduct.main_image || initialProduct.image_url || '';
+      const gallery = initialProduct.gallery_images && initialProduct.gallery_images.length > 0
+        ? initialProduct.gallery_images
+        : (initialProduct.gallery_urls || []);
+
       setFormData({
         name: initialProduct.name,
         slug: initialProduct.slug,
@@ -51,8 +62,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         dimensions: initialProduct.dimensions,
         print_time: initialProduct.print_time,
         available_colors: initialProduct.available_colors || ['Matte Black'],
-        image_url: initialProduct.image_url,
-        gallery_urls: initialProduct.gallery_urls || [],
+        image_url: mainImg,
+        main_image: mainImg,
+        public_id: initialProduct.public_id,
+        gallery_urls: gallery,
+        gallery_images: gallery,
+        gallery_public_ids: initialProduct.gallery_public_ids || [],
         model_type: initialProduct.model_type || 'mesh_stand',
         is_available: initialProduct.is_available,
         is_featured: initialProduct.is_featured,
@@ -68,8 +83,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         dimensions: '80 x 80 x 60 mm',
         print_time: '2h 15m',
         available_colors: ['Matte Black', 'Electric Blue', 'Arctic White'],
-        image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+        image_url: '',
+        main_image: '',
+        public_id: undefined,
         gallery_urls: [],
+        gallery_images: [],
+        gallery_public_ids: [],
         model_type: 'mesh_planter',
         is_available: true,
         is_featured: false,
@@ -89,6 +108,24 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       ...prev,
       name,
       slug: initialProduct ? prev.slug : slug,
+    }));
+  };
+
+  const handleMainImageChange = (url: string, publicId?: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      image_url: url,
+      main_image: url,
+      public_id: publicId || prev.public_id,
+    }));
+  };
+
+  const handleGalleryImagesChange = (urls: string[], publicIds?: string[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      gallery_urls: urls,
+      gallery_images: urls,
+      gallery_public_ids: publicIds || prev.gallery_public_ids,
     }));
   };
 
@@ -112,14 +149,23 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.slug || !formData.price || !formData.image_url) {
-      showToast('Please fill all required fields.', 'error');
+    const finalMainImage = formData.main_image || formData.image_url;
+
+    if (!formData.name || !formData.slug || !formData.price || !finalMainImage) {
+      showToast('Please provide a name, price, and primary showcase image.', 'error');
       return;
     }
 
     setIsSaving(true);
     try {
-      await onSave(formData);
+      const payload = {
+        ...formData,
+        image_url: finalMainImage,
+        main_image: finalMainImage,
+        gallery_urls: formData.gallery_images && formData.gallery_images.length > 0 ? formData.gallery_images : [finalMainImage],
+        gallery_images: formData.gallery_images && formData.gallery_images.length > 0 ? formData.gallery_images : [finalMainImage],
+      };
+      await onSave(payload);
       showToast(initialProduct ? 'Product updated successfully.' : 'Product added successfully.', 'success');
       onClose();
     } catch (err: any) {
@@ -272,17 +318,45 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </div>
 
-          {/* Image URL */}
-          <div className="space-y-1">
-            <label className="font-mono text-neutral-300">Primary Product Image URL *</label>
-            <input
-              type="url"
-              required
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://..."
-              className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-white font-mono focus:outline-none focus:border-cyan-500"
+          {/* Cloudinary Media Management Section */}
+          <div className="space-y-2">
+            <CloudinaryImageUploader
+              productId={formData.slug || formData.name || 'product'}
+              mainImage={formData.main_image || formData.image_url}
+              mainPublicId={formData.public_id}
+              galleryImages={formData.gallery_images}
+              galleryPublicIds={formData.gallery_public_ids}
+              onMainImageChange={handleMainImageChange}
+              onGalleryImagesChange={handleGalleryImagesChange}
+              disabled={isSaving}
             />
+
+            {/* Optional Manual Direct URL Entry Toggle */}
+            <div className="flex items-center justify-between text-[11px] pt-1 px-1">
+              <button
+                type="button"
+                onClick={() => setShowManualUrl(!showManualUrl)}
+                className="text-neutral-400 hover:text-cyan-400 flex items-center gap-1 font-mono transition-colors"
+              >
+                <LinkIcon className="w-3 h-3" />
+                {showManualUrl ? 'Hide Manual URL Input' : 'Direct Cloudinary / Remote Image URL (Advanced)'}
+              </button>
+            </div>
+
+            {showManualUrl && (
+              <div className="p-3 bg-neutral-950 border border-neutral-800 rounded-xl space-y-2 text-xs animate-in fade-in">
+                <label className="font-mono text-neutral-300">Custom Image URL</label>
+                <input
+                  type="url"
+                  value={formData.image_url}
+                  onChange={(e) => {
+                    handleMainImageChange(e.target.value);
+                  }}
+                  placeholder="https://res.cloudinary.com/jushiok7/image/upload/..."
+                  className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-white font-mono focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+            )}
           </div>
 
           {/* Available Colors Tags */}

@@ -2,13 +2,15 @@ import { z } from 'zod';
 
 export const customerSchema = z
   .object({
-    name: z.string().min(2, 'Please enter your full name (at least 2 characters).'),
+    name: z.string().trim().min(2, 'Please enter your full name (at least 2 characters).'),
     phone: z
       .string()
-      .min(10, 'Please enter a valid 10-digit phone number.')
-      .max(15, 'Phone number too long.')
-      .regex(/^[0-9+\s-]{10,15}$/, 'Please enter a valid phone number with digits only.'),
-    email: z.string().email('Please enter a valid email address.').optional().or(z.literal('')),
+      .trim()
+      .regex(/^[0-9]{10}$/, 'Please enter a valid 10-digit mobile number.'),
+    email: z
+      .string()
+      .trim()
+      .email('Please enter a valid email address.'),
     college_type: z.enum(['KPR College', 'Other']).default('KPR College'),
     college: z.string().optional().or(z.literal('')),
     roll_number: z.string().optional().or(z.literal('')),
@@ -27,6 +29,33 @@ export const customerSchema = z
     state: z.string().optional().or(z.literal('')),
     pincode: z.string().optional().or(z.literal('')),
   })
+  // College name validation for Other colleges
+  .refine(
+    (data) => {
+      if (data.college_type === 'Other') {
+        return !!data.college && data.college.trim().length >= 2;
+      }
+      return true;
+    },
+    {
+      message: 'Please enter your College / Institution name.',
+      path: ['college'],
+    }
+  )
+  // Delivery method restriction: Only KPR College can use college_delivery
+  .refine(
+    (data) => {
+      if (data.college_type === 'Other' && data.delivery_method === 'college_delivery') {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: 'College delivery is available only within KPR College. Please select Home Delivery.',
+      path: ['delivery_method'],
+    }
+  )
+  // Home delivery validations
   .refine(
     (data) => {
       if (data.delivery_method === 'home_delivery') {
@@ -35,10 +64,47 @@ export const customerSchema = z
       return true;
     },
     {
-      message: 'Please provide complete delivery street address (at least 5 characters).',
+      message: 'Please provide full street address (at least 5 characters).',
       path: ['address'],
     }
   )
+  .refine(
+    (data) => {
+      if (data.delivery_method === 'home_delivery') {
+        return !!data.city && data.city.trim().length >= 2;
+      }
+      return true;
+    },
+    {
+      message: 'Please enter your city.',
+      path: ['city'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.delivery_method === 'home_delivery') {
+        return !!data.state && data.state.trim().length >= 2;
+      }
+      return true;
+    },
+    {
+      message: 'Please enter your state.',
+      path: ['state'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.delivery_method === 'home_delivery') {
+        return !!data.pincode && /^\d{6}$/.test(data.pincode.trim());
+      }
+      return true;
+    },
+    {
+      message: 'Please enter a valid 6-digit postal pincode.',
+      path: ['pincode'],
+    }
+  )
+  // College delivery validations
   .refine(
     (data) => {
       if (data.delivery_method === 'college_delivery') {
@@ -47,8 +113,32 @@ export const customerSchema = z
       return true;
     },
     {
-      message: 'Please select or enter your department at KPR College.',
+      message: 'Please select your department at KPR College.',
       path: ['department'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.delivery_method === 'college_delivery') {
+        return !!data.year && data.year.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Please select your year of study.',
+      path: ['year'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.delivery_method === 'college_delivery') {
+        return !!data.building_block && data.building_block.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Please select your building or block.',
+      path: ['building_block'],
     }
   );
 
@@ -62,15 +152,28 @@ export const customizationSchema = z.object({
 
 export type CustomizationFormData = z.infer<typeof customizationSchema>;
 
-export const studentSignupSchema = z.object({
-  name: z.string().min(2, 'Name is required.'),
-  email: z.string().email('Valid email is required.'),
-  phone: z.string().min(10, 'Valid 10-digit mobile number required.'),
-  college_type: z.enum(['KPR College', 'Other']).default('KPR College'),
-  college: z.string().optional(),
-  roll_number: z.string().optional(),
-  password: z.string().min(4, 'Password should be at least 4 characters.').optional(),
-});
+export const studentSignupSchema = z
+  .object({
+    name: z.string().trim().min(2, 'Please enter your full name (at least 2 characters).'),
+    email: z.string().trim().email('Please enter a valid email address.'),
+    phone: z.string().trim().regex(/^[0-9]{10}$/, 'Please enter a valid 10-digit mobile number.'),
+    college_type: z.enum(['KPR College', 'Other']).default('KPR College'),
+    college: z.string().optional(),
+    roll_number: z.string().optional(),
+    password: z.string().min(4, 'Password should be at least 4 characters.').optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.college_type === 'Other') {
+        return !!data.college && data.college.trim().length >= 2;
+      }
+      return true;
+    },
+    {
+      message: 'Please enter your College / Institution name.',
+      path: ['college'],
+    }
+  );
 
 export type StudentSignupFormData = z.infer<typeof studentSignupSchema>;
 

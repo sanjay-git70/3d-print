@@ -4,6 +4,7 @@ import { ProductModal } from '../../components/admin/ProductModal';
 import { productService } from '../../services/productService';
 import { Product } from '../../types';
 import { formatINR } from '../../lib/upiUtils';
+import { cloudinaryPresets } from '../../lib/cloudinary';
 import {
   Box,
   Plus,
@@ -16,6 +17,7 @@ import {
   ExternalLink,
   Layers,
   RefreshCw,
+  ImageIcon,
 } from 'lucide-react';
 import { useToast } from '../../components/common/Toast';
 
@@ -148,17 +150,24 @@ export const AdminProducts: React.FC = () => {
               {/* Image & Quick badges */}
               <div className="relative aspect-[16/9] w-full bg-neutral-950">
                 <img
-                  src={prod.image_url}
+                  src={cloudinaryPresets.card(prod.main_image || prod.image_url)}
                   alt={prod.name}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-2 left-2 flex gap-1.5">
+                <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
                   <span className="px-2 py-0.5 rounded bg-black/80 backdrop-blur-md text-[10px] font-mono text-cyan-300 border border-neutral-700">
                     {prod.category}
                   </span>
                   {prod.is_featured && (
                     <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] font-mono">
                       ★ Featured
+                    </span>
+                  )}
+                  {((prod.gallery_images && prod.gallery_images.length > 1) || (prod.gallery_urls && prod.gallery_urls.length > 1)) && (
+                    <span className="px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-700/50 text-[9px] font-mono flex items-center gap-1">
+                      <ImageIcon className="w-2.5 h-2.5" />
+                      {prod.gallery_images?.length || prod.gallery_urls?.length}
                     </span>
                   )}
                 </div>
